@@ -53,8 +53,10 @@ scene.fog = new THREE.Fog(SKY, 170, 560);
 
 const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.5, 2000);
 //На узком экране угол обзора по горизонтали меньше - отодвигаемся, чтобы остров влез целиком
-const fit = Math.max(1, 1.35 / (innerWidth / innerHeight));
+const fit = Math.pow(Math.max(1, 1.1 / (innerWidth / innerHeight)), 0.75);
 camera.position.set(-115, 100, 115).multiplyScalar(fit);
+scene.fog.near *= fit;
+scene.fog.far *= fit;
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 3, 0);
