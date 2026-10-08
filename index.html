@@ -5,14 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Low-poly terrain</title>
 <meta property="og:title" content="Low-poly terrain">
-<meta property="og:description" content="Низкополигональный ландшафт для Unity: горы, лес, река по периметру">
 <meta property="og:image" content="preview.png">
 <style>
   :root { --bg: #d6bda1; --ink: #1f2a33; --card: rgba(255, 255, 255, 0.82); }
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); }
   canvas { display: block; touch-action: none; }
   .card { position: fixed; left: 16px; top: 16px; max-width: calc(100% - 32px); padding: 12px 14px; border-radius: 12px; background: var(--card); backdrop-filter: blur(8px); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12); }
-  .card h1 { margin: 0 0 4px; font-size: 16px; }
+  .card h1 { margin: 0; font-size: 16px; }
   .card p { margin: 0; opacity: 0.75; }
   .hint { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: var(--card); font-size: 13px; text-align: center; width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; }
   .loading { position: fixed; inset: 0; display: grid; place-items: center; font-size: 15px; }
@@ -22,7 +21,6 @@
 <body>
 <div class="card">
   <h1>Low-poly terrain</h1>
-  <p>Горы, лес и река по периметру</p>
 </div>
 <div class="hint" id="hint">Крути мышкой · колесо — приблизить · правая кнопка — сдвиг</div>
 <div class="loading" id="loading">Загружаю ландшафт…</div>
