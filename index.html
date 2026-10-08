@@ -14,7 +14,7 @@
   .card { position: fixed; left: 16px; top: 16px; max-width: calc(100% - 32px); padding: 12px 14px; border-radius: 12px; background: var(--card); backdrop-filter: blur(8px); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12); }
   .card h1 { margin: 0 0 4px; font-size: 16px; }
   .card p { margin: 0; opacity: 0.75; }
-  .hint { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: var(--card); font-size: 13px; white-space: nowrap; }
+  .hint { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: var(--card); font-size: 13px; text-align: center; width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; }
   .loading { position: fixed; inset: 0; display: grid; place-items: center; font-size: 15px; }
   .loading.done { display: none; }
 </style>
@@ -52,14 +52,16 @@ scene.background = new THREE.Color(SKY);
 scene.fog = new THREE.Fog(SKY, 170, 560);
 
 const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.5, 2000);
-camera.position.set(-115, 100, 115);
+//На узком экране угол обзора по горизонтали меньше - отодвигаемся, чтобы остров влез целиком
+const fit = Math.max(1, 1.35 / (innerWidth / innerHeight));
+camera.position.set(-115, 100, 115).multiplyScalar(fit);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 3, 0);
 controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI * 0.47;
 controls.minDistance = 12;
-controls.maxDistance = 380;
+controls.maxDistance = 520;
 controls.autoRotate = true;
 controls.autoRotateSpeed = 0.6;
 controls.addEventListener('start', () => { controls.autoRotate = false; });
