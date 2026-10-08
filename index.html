@@ -8,7 +8,7 @@
 <meta property="og:description" content="Низкополигональный ландшафт для Unity: горы, лес, река по периметру">
 <meta property="og:image" content="preview.png">
 <style>
-  :root { --bg: #b8cfe6; --ink: #1f2a33; --card: rgba(255, 255, 255, 0.82); }
+  :root { --bg: #d6bda1; --ink: #1f2a33; --card: rgba(255, 255, 255, 0.82); }
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); }
   canvas { display: block; touch-action: none; }
   .card { position: fixed; left: 16px; top: 16px; max-width: calc(100% - 32px); padding: 12px 14px; border-radius: 12px; background: var(--card); backdrop-filter: blur(8px); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12); }
@@ -39,7 +39,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 if (matchMedia('(pointer: coarse)').matches) document.getElementById('hint').textContent = 'Крути пальцем · двумя — приблизить';
 
-const SKY = 0xb8cfe6;
+//Свет, дымка и цвета - те же, что в сцене Unity
+const SKY = 0xd6bda1;
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
@@ -49,14 +50,13 @@ document.body.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 170, 560);
+scene.fog = new THREE.FogExp2(SKY, 0.0042);
 
 const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.5, 2000);
 //На узком экране угол обзора по горизонтали меньше - отодвигаемся, чтобы остров влез целиком
 const fit = Math.pow(Math.max(1, 1.1 / (innerWidth / innerHeight)), 0.75);
 camera.position.set(-115, 100, 115).multiplyScalar(fit);
-scene.fog.near *= fit;
-scene.fog.far *= fit;
+scene.fog.density /= fit;
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 3, 0);
@@ -68,14 +68,14 @@ controls.autoRotate = true;
 controls.autoRotateSpeed = 0.6;
 controls.addEventListener('start', () => { controls.autoRotate = false; });
 
-scene.add(new THREE.HemisphereLight(0xc4d8ef, 0x544e48, 1.7));
+scene.add(new THREE.HemisphereLight(0xc9b6a0, 0x4d4036, 1.35));
 
-//Солнце с того же направления, что и в сцене Unity
-const sun = new THREE.DirectionalLight(0xfff1da, 3.1);
-sun.position.set(77, 149, 110);
+//Низкое тёплое солнце с того же направления, что и в сцене Unity
+const sun = new THREE.DirectionalLight(0xffd6a3, 4.2);
+sun.position.set(161, 75, 93);
 sun.castShadow = true;
 sun.shadow.mapSize.set(4096, 4096);
-Object.assign(sun.shadow.camera, { left: -110, right: 110, top: 110, bottom: -110, near: 10, far: 450 });
+Object.assign(sun.shadow.camera, { left: -130, right: 130, top: 130, bottom: -130, near: 10, far: 500 });
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.25;
 scene.add(sun);
@@ -84,13 +84,13 @@ scene.add(sun);
 const toLinear = v => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
 
 const land = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, flatShading: true });
-const water = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0x66bbe6, roughness: 0.2, metalness: 0, transparent: true, opacity: 0.78, flatShading: true });
+const water = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0x6a979e, roughness: 0.2, metalness: 0, transparent: true, opacity: 0.82, flatShading: true });
 
 const buffer = await (await fetch('land.bin')).arrayBuffer();
 const view = new DataView(buffer);
 let offset = 0;
 const count = view.getInt32(offset, true); offset += 4;
-const names = ['terrain', 'forest', 'rocks', 'river'];
+const names = ['terrain', 'forest', 'grass', 'rocks', 'river'];
 
 for (let m = 0; m < count; m++) {
   const n = view.getInt32(offset, true); offset += 4;
@@ -106,7 +106,7 @@ for (let m = 0; m < count; m++) {
 
   const isWater = names[m] === 'river';
   const mesh = new THREE.Mesh(geometry, isWater ? water : land);
-  mesh.castShadow = !isWater;
+  mesh.castShadow = !isWater && names[m] !== 'grass';
   mesh.receiveShadow = true;
   scene.add(mesh);
 }
