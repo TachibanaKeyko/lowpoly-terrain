@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Low-poly terrain</title>
+<meta property="og:title" content="Low-poly terrain">
+<meta property="og:description" content="Низкополигональный ландшафт для Unity: горы, лес, река по периметру">
+<meta property="og:image" content="preview.png">
+<style>
+  :root { --bg: #b8cfe6; --ink: #1f2a33; --card: rgba(255, 255, 255, 0.82); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); }
+  canvas { display: block; touch-action: none; }
+  .card { position: fixed; left: 16px; top: 16px; max-width: calc(100% - 32px); padding: 12px 14px; border-radius: 12px; background: var(--card); backdrop-filter: blur(8px); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12); }
+  .card h1 { margin: 0 0 4px; font-size: 16px; }
+  .card p { margin: 0; opacity: 0.75; }
+  .hint { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: var(--card); font-size: 13px; white-space: nowrap; }
+  .loading { position: fixed; inset: 0; display: grid; place-items: center; font-size: 15px; }
+  .loading.done { display: none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Low-poly terrain</h1>
+  <p>Горы, лес и река по периметру · сгенерировано кодом в Unity</p>
+</div>
+<div class="hint" id="hint">Крути мышкой · колесо — приблизить · правая кнопка — сдвиг</div>
+<div class="loading" id="loading">Загружаю ландшафт…</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+if (matchMedia('(pointer: coarse)').matches) document.getElementById('hint').textContent = 'Крути пальцем · двумя — приблизить';
+
+const SKY = 0xb8cfe6;
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(SKY);
+scene.fog = new THREE.Fog(SKY, 170, 560);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.5, 2000);
+camera.position.set(-115, 100, 115);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 3, 0);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.47;
+controls.minDistance = 12;
+controls.maxDistance = 380;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.6;
+controls.addEventListener('start', () => { controls.autoRotate = false; });
+
+scene.add(new THREE.HemisphereLight(0xc4d8ef, 0x544e48, 1.7));
+
+//Солнце с того же направления, что и в сцене Unity
+const sun = new THREE.DirectionalLight(0xfff1da, 3.1);
+sun.position.set(77, 149, 110);
+sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096);
+Object.assign(sun.shadow.camera, { left: -110, right: 110, top: 110, bottom: -110, near: 10, far: 450 });
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.25;
+scene.add(sun);
+
+//Цвета вершин записаны в sRGB, а three.js ждёт линейные
+const toLinear = v => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+
+const land = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, flatShading: true });
+const water = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0x66bbe6, roughness: 0.2, metalness: 0, transparent: true, opacity: 0.78, flatShading: true });
+
+const buffer = await (await fetch('land.bin')).arrayBuffer();
+const view = new DataView(buffer);
+let offset = 0;
+const count = view.getInt32(offset, true); offset += 4;
+const names = ['terrain', 'forest', 'rocks', 'river'];
+
+for (let m = 0; m < count; m++) {
+  const n = view.getInt32(offset, true); offset += 4;
+  const positions = new Float32Array(buffer.slice(offset, offset + n * 12)); offset += n * 12;
+  const bytes = new Uint8Array(buffer, offset, n * 3); offset += n * 3;
+  const colors = new Float32Array(n * 3);
+  for (let i = 0; i < colors.length; i++) colors[i] = toLinear(bytes[i]);
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.computeVertexNormals();
+
+  const isWater = names[m] === 'river';
+  const mesh = new THREE.Mesh(geometry, isWater ? water : land);
+  mesh.castShadow = !isWater;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+}
+
+document.getElementById('loading').classList.add('done');
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+renderer.setAnimationLoop(() => {
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
