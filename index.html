@@ -13,7 +13,6 @@
   .card { position: fixed; left: 16px; top: 16px; max-width: calc(100% - 32px); padding: 12px 14px; border-radius: 12px; background: var(--card); backdrop-filter: blur(8px); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12); }
   .card h1 { margin: 0; font-size: 16px; }
   .card p { margin: 0; opacity: 0.75; }
-  .hint { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: var(--card); font-size: 13px; text-align: center; width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; }
   .loading { position: fixed; inset: 0; display: grid; place-items: center; font-size: 15px; }
   .loading.done { display: none; }
 </style>
@@ -22,7 +21,6 @@
 <div class="card">
   <h1>Low-poly terrain</h1>
 </div>
-<div class="hint" id="hint">Крути мышкой · колесо — приблизить · правая кнопка — сдвиг</div>
 <div class="loading" id="loading">Загружаю ландшафт…</div>
 
 <script type="importmap">
@@ -35,7 +33,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-if (matchMedia('(pointer: coarse)').matches) document.getElementById('hint').textContent = 'Крути пальцем · двумя — приблизить';
 
 //Свет, дымка и цвета - те же, что в сцене Unity
 const SKY = 0xd6bda1;
